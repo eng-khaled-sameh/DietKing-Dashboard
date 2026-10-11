@@ -106,7 +106,8 @@ export default function InventoryPage() {
           setStock(itemsData.map(item => {
             const stockInfo = stockMap[item.id] || { qty: 0, updated_at: null };
             const qty = stockInfo.qty;
-            const min = Number(item.min_level || 20);
+            const min = Number(item.min_level ?? 0);
+            const isLow = min > 0 && qty <= min;
             return {
               id:       item.id,
               code:     item.sku || '-',
@@ -115,9 +116,9 @@ export default function InventoryPage() {
               unit:     item.unit_code || 'وحدة',
               icon:     'inventory_2',
               iconTone: 'primary',
-              qtyTone:  qty <= min ? (qty <= 5 ? 'error' : 'secondary') : 'normal',
-              tone:     qty <= 5   ? 'error' : qty <= min ? 'secondary' : 'tertiary',
-              label:    qty <= 5   ? 'شارف على النفاد' : qty <= min ? 'منخفض' : 'متوفر بكفاية',
+              qtyTone:  isLow ? (qty <= 5 ? 'error' : 'secondary') : 'normal',
+              tone:     isLow ? (qty <= 5 ? 'error' : 'secondary') : 'tertiary',
+              label:    isLow ? (qty <= 5 ? 'شارف على النفاد' : 'منخفض') : 'متوفر بكفاية',
               updated:  stockInfo.updated_at ? new Date(stockInfo.updated_at).toLocaleDateString('ar-EG') : 'اليوم',
             };
           }));
@@ -176,6 +177,7 @@ export default function InventoryPage() {
         setFinished(batchesArr.map(batch => {
           const item = itemMap[batch.item_id] || {};
           return {
+            id:       batch.id,
             name:     item.name || batch.batch_number || 'دفعة إنتاج وجبات',
             qty:      `${batch.quantity || 0} ${item.unit_code || 'وجبة'}`,
             produced: new Date(batch.produced_at || batch.created_at || Date.now()).toLocaleDateString('ar-EG'),
@@ -610,8 +612,8 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container">
-                {finished.map(row => (
-                  <tr key={row.name} className="hover:bg-surface-container-high/40 transition-colors">
+                {finished.map((row, index) => (
+                  <tr key={row.id || `${row.name}-${row.produced}-${index}`} className="hover:bg-surface-container-high/40 transition-colors">
                     <td className="py-space-sm px-space-md">
                       <div className="flex items-center gap-space-sm">
                         <div className={ICON_TONES[row.iconTone]}>

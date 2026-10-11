@@ -64,19 +64,50 @@ export default function DashboardPage() {
           .from("inventory_items")
           .select("id, name, sku, unit_code, min_level, is_active");
 
-        const { data: stockData } = await supabase
-          .from("inventory_stock")
-          .select("item_id, quantity");
+        // استخدم نفس مصدر البيانات في صفحة المخزون: رصيد المستودع الرئيسي فقط.
+        let stockData = [];
+        let mainStockLoaded = false;
+        try {
+          const { data: stockResponse, error: stockError } = await supabase.rpc("inventory_get_stock");
+          if (!stockError && Array.isArray(stockResponse?.stock)) {
+            stockData = stockResponse.stock;
+            mainStockLoaded = true;
+          }
+        } catch {}
+
+        // بديل متوافق إذا لم تكن دالة الرصيد متاحة في البيئة الحالية.
+        if (!mainStockLoaded) {
+          const { data: mainWarehouse } = await supabase
+            .from("warehouses")
+            .select("id")
+            .eq("kind", "main")
+            .maybeSingle();
+
+          if (mainWarehouse) {
+            const { data } = await supabase
+              .from("inventory_stock")
+              .select("item_id, quantity")
+              .eq("warehouse_id", mainWarehouse.id);
+            stockData = data || [];
+          }
+        }
 
         if (invItems && invItems.length > 0) {
           const stockMap = Object.fromEntries(
             (stockData || []).map(s => [s.item_id, Number(s.quantity || 0)])
           );
-          setStockItems(invItems.map(item => ({
-            ...item,
-            quantity: stockMap[item.id] || 0,
-            isLow: (stockMap[item.id] || 0) <= Number(item.min_level || 10),
-          })));
+          setStockItems(invItems
+            .filter(item => item.is_active)
+            .map(item => {
+              const quantity = stockMap[item.id] ?? 0;
+              const minLevel = Number(item.min_level ?? 0);
+              return {
+                ...item,
+                quantity,
+                // الصنف الذي ليس له حد أمان لا يُصنّف «بحاجة لتوريد».
+                isLow: minLevel > 0 && quantity <= minLevel,
+              };
+            }));
         }
 
         // 4. جلب طلبات الفروع الحقيقية عبر RPC أو الجداول
@@ -503,7 +534,7 @@ export default function DashboardPage() {
                       <span className="text-label-sm font-normal text-on-surface-variant">{item.unit_code || "وحدة"}</span>
                     </td>
                     <td className="py-3 px-space-md text-left font-mono text-on-surface-variant">
-                      {item.min_level || 10}{" "}
+                      {item.min_level ?? 0}{" "}
                       <span className="text-label-sm font-normal">{item.unit_code || "وحدة"}</span>
                     </td>
                     <td className="py-3 px-space-md text-center">
