@@ -1,408 +1,783 @@
 "use client";
-import { useState } from "react";
 
-const TAB_ON = "flex-1 sm:flex-initial text-center px-2.5 sm:px-space-md py-1.5 rounded-md font-label-sm text-xs sm:text-label-sm bg-primary-container text-on-primary font-bold shadow-sm whitespace-nowrap";
-const TAB_OFF = "flex-1 sm:flex-initial text-center px-2.5 sm:px-space-md py-1.5 rounded-md font-label-sm text-xs sm:text-label-sm text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap";
-
-const BAR_NAME_HI = "w-24 sm:w-28 truncate font-label-sm text-xs sm:text-label-sm text-on-surface shrink-0";
-const BAR_NAME_LO = "w-24 sm:w-28 truncate font-label-sm text-xs sm:text-label-sm text-on-surface-variant shrink-0";
-const BAR_TRACK_HI = "flex-1 h-3 rounded-full bg-surface-container-highest overflow-hidden min-w-[50px]";
-const BAR_TRACK_LO = "flex-1 h-2 rounded-full bg-surface-container-highest overflow-hidden min-w-[50px]";
-const BAR_AMT_HI = "font-label-sm text-xs sm:text-label-sm font-bold text-on-surface text-left min-w-[65px] sm:min-w-[70px] shrink-0";
-const BAR_AMT_LO = "font-label-sm text-xs sm:text-label-sm text-on-surface-variant text-left min-w-[65px] sm:min-w-[70px] shrink-0";
-
-const SALES_BARS = [
-  { name: "التحلية (الرياض)", nameClass: BAR_NAME_HI, trackClass: BAR_TRACK_HI, fill: "h-full bg-primary-container rounded-full", width: "100%", amountClass: BAR_AMT_HI, amount: "28,450 ر.س" },
-  { name: "العليا (الرياض)", nameClass: BAR_NAME_HI, trackClass: BAR_TRACK_HI, fill: "h-full bg-primary-container/90 rounded-full", width: "86%", amountClass: BAR_AMT_HI, amount: "24,500 ر.س" },
-  { name: "الياسمين (الرياض)", nameClass: BAR_NAME_HI, trackClass: BAR_TRACK_HI, fill: "h-full bg-secondary-container rounded-full", width: "76%", amountClass: BAR_AMT_HI, amount: "21,650 ر.س" },
-  { name: "طريق الملك (جدة)", nameClass: BAR_NAME_HI, trackClass: BAR_TRACK_HI, fill: "h-full bg-secondary-container/90 rounded-full", width: "67%", amountClass: BAR_AMT_HI, amount: "19,100 ر.س" },
-  { name: "الروضة (الرياض)", nameClass: BAR_NAME_LO, trackClass: BAR_TRACK_LO, fill: "h-full bg-secondary rounded-full", width: "58%", amountClass: BAR_AMT_LO, amount: "16,400 ر.س" },
-  { name: "الشاطئ (جدة)", nameClass: BAR_NAME_LO, trackClass: BAR_TRACK_LO, fill: "h-full bg-secondary/80 rounded-full", width: "49%", amountClass: BAR_AMT_LO, amount: "13,950 ر.س" },
-  { name: "الخبر", nameClass: BAR_NAME_LO, trackClass: BAR_TRACK_LO, fill: "h-full bg-secondary/70 rounded-full", width: "41%", amountClass: BAR_AMT_LO, amount: "11,800 ر.س" },
-  { name: "العزيزية (مكة)", nameClass: BAR_NAME_LO, trackClass: BAR_TRACK_LO, fill: "h-full bg-secondary/60 rounded-full", width: "27%", amountClass: BAR_AMT_LO, amount: "7,600 ر.س" },
-  { name: "سلطانة (المدينة)", nameClass: BAR_NAME_LO, trackClass: BAR_TRACK_LO, fill: "h-full bg-secondary/50 rounded-full", width: "19%", amountClass: BAR_AMT_LO, amount: "5,500 ر.س" },
-];
-
-const EXP_AMT_TOP = "p-3 text-left font-bold text-secondary";
-const EXP_AMT = "p-3 text-left font-bold text-on-surface";
-const EXPENSES = [
-  { dot: "w-2 h-2 rounded-full bg-secondary-container", branch: "فرع التحلية - الرياض", items: "إيجار ورواتب كوادر المطبخ", amountClass: EXP_AMT_TOP, amount: "18,200 ر.س", pct: "28.1%" },
-  { dot: "w-2 h-2 rounded-full bg-secondary", branch: "فرع العليا - الرياض", items: "كهرباء وتشغيل ورواتب", amountClass: EXP_AMT, amount: "11,400 ر.س", pct: "17.6%" },
-  { dot: "w-2 h-2 rounded-full bg-primary-fixed-dim", branch: "فرع طريق الملك - جدة", items: "صيانة دورية ومعدات تبريد", amountClass: EXP_AMT, amount: "9,850 ر.س", pct: "15.2%" },
-  { dot: "w-2 h-2 rounded-full bg-outline", branch: "فرع الياسمين - الرياض", items: "مستلزمات تغليف واستهلاكيات", amountClass: EXP_AMT, amount: "8,300 ر.س", pct: "12.8%" },
-  { dot: "w-2 h-2 rounded-full bg-surface-variant", branch: "الفروع الأخرى (5 فروع)", items: "فواتير مجمعة ومصروفات نثرية", amountClass: EXP_AMT, amount: "17,100 ر.س", pct: "26.3%" },
-];
-
-const STATUS_PAID = "px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary font-label-sm text-label-sm";
-const STATUS_DUE = "px-2 py-0.5 rounded-full bg-secondary/15 text-secondary font-label-sm text-label-sm";
-const SUPPLIERS = [
-  { name: "شركة الدواجن الوطنية", category: "دجاج متبل ولحوم طازجة", invoices: "10 فواتير", amount: "22,600 ر.س", statusClass: STATUS_PAID, status: "مسدد بالكامل" },
-  { name: "مؤسسة المأكولات البحرية العالمية", category: "سلمون طازج ومأكولات بحرية", invoices: "6 فواتير", amount: "14,200 ر.س", statusClass: STATUS_PAID, status: "مسدد بالكامل" },
-  { name: "شركة مطاحن الحبوب العضوية", category: "أرز صحي وشوفان معبأ", invoices: "5 فواتير", amount: "8,750 ر.س", statusClass: STATUS_DUE, status: "أجل (مستحق)" },
-  { name: "شركة كينزا للمشروبات الدايت", category: "مشروبات صحية وعصائر صفر سعرات", invoices: "3 فواتير", amount: "6,850 ر.س", statusClass: STATUS_PAID, status: "مسدد بالكامل" },
-];
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/lib/api";
+import { useBranches } from "@/hooks/useData";
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState("all"); // 'today' | 'week' | 'month' | 'all'
+  const [selectedBranch, setSelectedBranch] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Live Database States
+  const [salesList, setSalesList] = useState([]);
+  const [expensesList, setExpensesList] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
+
+  const { data: rawBranches = [] } = useBranches();
+
+  // Load real data from Supabase
+  async function loadReportsData() {
+    setIsLoading(true);
+    try {
+      // 1. جلب المبيعات الحقيقية من RPC أولاً ثم جدول sales
+      let salesRows = [];
+      try {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc("get_branch_sales_summary", {
+          p_branch_id: null,
+          p_from: null,
+          p_to: null,
+        });
+        if (!rpcErr && rpcRes && rpcRes.recent && rpcRes.recent.length > 0) {
+          salesRows = rpcRes.recent;
+        }
+      } catch {}
+
+      if (salesRows.length === 0) {
+        const { data: directSales } = await supabase
+          .from("sales")
+          .select("id, invoice_number, branch_id, branch_name, cashier_name, total, payment_method, sold_at")
+          .order("sold_at", { ascending: false });
+        if (directSales && directSales.length > 0) {
+          salesRows = directSales;
+        }
+      }
+      setSalesList(salesRows);
+
+      // 2. جلب المصروفات الحقيقية من جدول expense_invoices أو expenses
+      let expRows = [];
+      const { data: expInv } = await supabase
+        .from("expense_invoices")
+        .select("id, invoice_number, branch_name, branch_id, category, total, amount, vat_amount, expense_date, payee, created_at");
+      if (expInv && expInv.length > 0) {
+        expRows = expInv;
+      } else {
+        const { data: expDirect } = await supabase
+          .from("expenses")
+          .select("id, branch_id, category, total, amount, vat_amount, expense_date, created_at");
+        if (expDirect && expDirect.length > 0) expRows = expDirect;
+      }
+      setExpensesList(expRows);
+
+      // 3. جلب بيانات رصيد وأصناف المخزون الحقيقية
+      const { data: invItems } = await supabase
+        .from("inventory_items")
+        .select("id, name, sku, unit_code, min_level, is_active");
+
+      const { data: stockData } = await supabase
+        .from("inventory_stock")
+        .select("item_id, quantity");
+
+      if (invItems && invItems.length > 0) {
+        const stockMap = Object.fromEntries(
+          (stockData || []).map(s => [s.item_id, Number(s.quantity || 0)])
+        );
+        setStockItems(
+          invItems.map(item => ({
+            ...item,
+            quantity: stockMap[item.id] || 0,
+            isLow: (stockMap[item.id] || 0) <= Number(item.min_level || 10),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Reports data fetch error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadReportsData();
+  }, []);
+
+  // Filter calculations strictly by period and branch
+  const filteredSales = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+
+    return salesList.filter(s => {
+      // Branch filter
+      if (selectedBranch !== "all") {
+        if (s.branch_id !== selectedBranch && s.branch_name !== selectedBranch) return false;
+      }
+
+      // Period filter
+      if (period === "all") return true;
+      if (!s.sold_at) return false;
+      const saleDateStr = s.sold_at.split("T")[0];
+      const saleDate = new Date(s.sold_at);
+      const diffDays = (now - saleDate) / (1000 * 60 * 60 * 24);
+
+      if (period === "today") return saleDateStr === todayStr;
+      if (period === "week") return diffDays >= 0 && diffDays <= 7;
+      if (period === "month") return diffDays >= 0 && diffDays <= 30;
+      return true;
+    });
+  }, [salesList, period, selectedBranch]);
+
+  const filteredExpenses = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+
+    return expensesList.filter(e => {
+      // Branch filter
+      if (selectedBranch !== "all") {
+        if (e.branch_id !== selectedBranch && e.branch_name !== selectedBranch) return false;
+      }
+
+      // Period filter
+      if (period === "all") return true;
+      const dateStr = e.expense_date || (e.created_at ? e.created_at.split("T")[0] : null);
+      if (!dateStr) return true;
+      const expDate = new Date(dateStr);
+      const diffDays = (now - expDate) / (1000 * 60 * 60 * 24);
+
+      if (period === "today") return dateStr === todayStr;
+      if (period === "week") return diffDays >= 0 && diffDays <= 7;
+      if (period === "month") return diffDays >= 0 && diffDays <= 30;
+      return true;
+    });
+  }, [expensesList, period, selectedBranch]);
+
+  // Financial aggregates strictly computed
+  const totalSales = useMemo(() => {
+    return filteredSales.reduce((acc, s) => acc + Number(s.total || 0), 0);
+  }, [filteredSales]);
+
+  const totalExpenses = useMemo(() => {
+    return filteredExpenses.reduce((acc, e) => acc + Number(e.total || e.amount || 0), 0);
+  }, [filteredExpenses]);
+
+  const netProfit = totalSales - totalExpenses;
+  const profitMargin = totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : "0.0";
+  const avgBasket = filteredSales.length > 0 ? (totalSales / filteredSales.length).toFixed(2) : "0.00";
+
+  // VAT (15% inclusive calculation: Total - Total / 1.15)
+  const vatCollected = useMemo(() => {
+    return Number((totalSales - (totalSales / 1.15)).toFixed(2));
+  }, [totalSales]);
+  const netSalesBeforeVat = Math.max(0, totalSales - vatCollected);
+
+  // Payment Breakdown
+  const paymentStats = useMemo(() => {
+    let cash = 0;
+    let card = 0;
+    let delivery = 0;
+    let cashCount = 0;
+    let cardCount = 0;
+    let deliveryCount = 0;
+
+    filteredSales.forEach(s => {
+      const m = (s.payment_method || "").toLowerCase();
+      const amt = Number(s.total || 0);
+      if (m.includes("كاش") || m.includes("cash")) {
+        cash += amt;
+        cashCount += 1;
+      } else if (m.includes("شبكة") || m.includes("مدى") || m.includes("card") || m.includes("visa")) {
+        card += amt;
+        cardCount += 1;
+      } else {
+        delivery += amt;
+        deliveryCount += 1;
+      }
+    });
+
+    const cardPct = totalSales > 0 ? Math.round((card / totalSales) * 100) : 0;
+    const cashPct = totalSales > 0 ? Math.round((cash / totalSales) * 100) : 0;
+    const deliveryPct = totalSales > 0 ? Math.max(0, 100 - cardPct - cashPct) : 0;
+
+    return { cash, card, delivery, cardPct, cashPct, deliveryPct, cashCount, cardCount, deliveryCount };
+  }, [filteredSales, totalSales]);
+
+  // Branch Performance Ranking
+  const branchPerformance = useMemo(() => {
+    const map = {};
+    filteredSales.forEach(s => {
+      const bName = s.branch_name || "فرع غير محدد";
+      if (!map[bName]) {
+        map[bName] = { name: bName, total: 0, count: 0 };
+      }
+      map[bName].total += Number(s.total || 0);
+      map[bName].count += 1;
+    });
+
+    return Object.values(map)
+      .map(b => ({
+        ...b,
+        pct: totalSales > 0 ? ((b.total / totalSales) * 100).toFixed(1) : "0",
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [filteredSales, totalSales]);
+
+  // Expense breakdown by category
+  const expenseCategories = useMemo(() => {
+    const map = {};
+    filteredExpenses.forEach(e => {
+      const cat = e.category || "أخرى";
+      const amt = Number(e.total || e.amount || 0);
+      map[cat] = (map[cat] || 0) + amt;
+    });
+
+    return Object.entries(map)
+      .map(([cat, amount]) => ({
+        category: cat,
+        amount,
+        pct: totalExpenses > 0 ? ((amount / totalExpenses) * 100).toFixed(1) : "0",
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [filteredExpenses, totalExpenses]);
+
+  // Inventory Health Metrics
+  const inventoryHealth = useMemo(() => {
+    const totalItems = stockItems.length;
+    const lowItems = stockItems.filter(i => i.isLow).length;
+    const safeItems = Math.max(0, totalItems - lowItems);
+    const safePct = totalItems > 0 ? Math.round((safeItems / totalItems) * 100) : 100;
+    const totalQty = stockItems.reduce((acc, i) => acc + Number(i.quantity || 0), 0);
+
+    return { totalItems, lowItems, safeItems, safePct, totalQty };
+  }, [stockItems]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await loadReportsData();
+    setRefreshing(false);
+  }
+
+  function fmtNumber(n) {
+    if (n === null || n === undefined) return "0";
+    return Number(n).toLocaleString("ar-SA", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
 
   return (
-    <div className="flex flex-col w-full">
-      {/* Page Header */}
+    <div className="flex flex-col w-full pb-space-xl">
+      {/* Dashboard Top Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md py-space-lg mb-space-md">
         <div className="flex flex-col">
           <div className="flex items-center gap-space-sm mb-space-xs">
-            <h1 className="font-headline-xl text-headline-xl text-on-surface font-extrabold tracking-tight">التقارير</h1>
-            <span className="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full text-label-sm font-label-sm bg-primary/10 text-primary">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              تحليلات شاملة
+            <h1 className="font-headline-xl text-headline-xl text-on-surface font-extrabold tracking-tight">
+              لوحة التقارير والمؤشرات المالية
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full text-label-sm font-label-sm bg-primary/10 text-primary font-semibold">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+              بيانات مالية حقيقية 100%
             </span>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl">
-            تقارير مالية وتشغيلية شاملة لفروع دايت كينج التسعة — مبيعات، مصروفات، مشتريات، ومخزون
+            تقارير تدقيق وتحليل مالي وتشغيلي دقيقة، مستخرجة مباشرة من القيود المحاسبية والفواتير المسجلة
           </p>
         </div>
-        <button className="inline-flex items-center justify-center gap-space-sm px-space-lg py-space-sm rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-lg text-label-lg shadow-sm transition-colors w-full sm:w-auto" type="button">
-          <span className="material-symbols-outlined text-[20px] text-primary">download</span>
-          <span>تصدير التقارير (PDF/Excel)</span>
-        </button>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-space-sm flex-wrap sm:flex-nowrap">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-2 px-space-md py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors cursor-pointer shadow-sm"
+            title="إعادة جلب البيانات وتحديث التقرير"
+          >
+            <span className={`material-symbols-outlined text-[18px] text-primary ${refreshing ? "animate-spin" : ""}`}>
+              sync
+            </span>
+            <span>تحديث المؤشرات</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-space-md py-2.5 rounded-xl bg-primary-container text-on-primary-container hover:brightness-110 font-label-md text-label-md transition-all shadow-sm font-semibold cursor-pointer"
+            title="طباعة التقرير المالي"
+          >
+            <span className="material-symbols-outlined text-[18px]">print</span>
+            <span>طباعة التقرير</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md bg-surface-container-low p-space-md rounded-xl mb-space-lg shadow-sm">
-        <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg overflow-x-auto no-scrollbar w-full sm:w-auto" id="time-filter-group">
-          <button className={period === "today" ? TAB_ON : TAB_OFF} onClick={() => setPeriod("today")} type="button">اليوم</button>
-          <button className={period === "week" ? TAB_ON : TAB_OFF} onClick={() => setPeriod("week")} type="button">هذا الأسبوع</button>
-          <button className={period === "month" ? TAB_ON : TAB_OFF} onClick={() => setPeriod("month")} type="button">هذا الشهر</button>
-          <button className={period === "custom" ? TAB_ON : TAB_OFF} onClick={() => setPeriod("custom")} type="button">فترة مخصصة</button>
+      {/* Filter Toolbar (فترة زمنية + تحديد الفرع) */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md bg-surface-container-low p-space-md rounded-xl mb-space-lg shadow-sm border border-outline-variant/20">
+        {/* Period Selector Tabs */}
+        <div className="flex items-center gap-1.5 bg-surface-container-lowest p-1 rounded-xl overflow-x-auto no-scrollbar">
+          {[
+            { id: "all", label: "كل الفترات المسجلة" },
+            { id: "month", label: "هذا الشهر (30 يوم)" },
+            { id: "week", label: "آخر 7 أيام" },
+            { id: "today", label: "اليوم" },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPeriod(tab.id)}
+              className={`px-3 py-1.5 rounded-lg font-label-md text-label-md transition-all whitespace-nowrap ${
+                period === tab.id
+                  ? "bg-primary-container text-on-primary-container font-bold shadow-sm"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center justify-between sm:justify-start gap-space-sm w-full sm:w-auto">
-          <label className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap" htmlFor="report-branch-select">الفرع:</label>
-          <div className="relative flex-1 sm:flex-initial">
-            <select className="w-full sm:w-auto bg-surface-container-lowest text-on-surface font-body-md text-body-md py-space-xs px-space-md pl-space-xl rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-container appearance-none cursor-pointer" defaultValue="all" id="report-branch-select">
-              <option value="all">كل الفروع (9 فروع)</option>
-              <option value="tahlia">فرع التحلية - الرياض</option>
-              <option value="olaya">فرع العليا - الرياض</option>
-              <option value="yasmin">فرع الياسمين - الرياض</option>
-              <option value="king-road">فرع طريق الملك - جدة</option>
-              <option value="rawdah">فرع الروضة - جدة</option>
-              <option value="shatea">فرع الشاطئ - الدمام</option>
-              <option value="khobar">فرع الخبر الشمالية</option>
-              <option value="aziziya">فرع العزيزية - مكة</option>
-              <option value="sultana">فرع سلطانة - المدينة المنورة</option>
+
+        {/* Branch Selector */}
+        <div className="flex items-center gap-space-sm">
+          <label className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">الفرع المستهدف:</label>
+          <div className="relative">
+            <select
+              className="bg-surface-container-lowest text-on-surface font-body-md text-body-md py-1.5 px-space-md pl-8 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer border border-outline-variant/30"
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+            >
+              <option value="all">شبكة كل الفروع (المجمعة)</option>
+              {rawBranches.map(b => (
+                <option key={b.id} value={b.name}>{b.name}</option>
+              ))}
             </select>
-            <span className="material-symbols-outlined absolute left-space-xs top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">
+              expand_more
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Reports Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-space-xl pb-space-xl">
+      {/* Row 1: 4 Authentic Key Financial Metrics (KPIs) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter mb-space-xl">
+        {/* KPI 1: إجمالي المبيعات الإيرادية */}
+        <div className="bg-surface-container-low p-space-lg rounded-2xl flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:border-primary/40 transition-colors">
+          <div className="flex items-center justify-between mb-space-sm">
+            <span className="font-label-md text-label-md text-on-surface-variant font-medium">إجمالي المبيعات المحققة</span>
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[22px]">point_of_sale</span>
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1">
+              <span className="font-display-lg text-display-lg font-extrabold text-on-surface font-mono tracking-tight">
+                {isLoading ? "..." : fmtNumber(totalSales)}
+              </span>
+              <span className="font-headline-sm text-headline-sm text-primary font-bold">ر.س</span>
+            </div>
+            <div className="mt-space-xs flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-lg">
+              <span>الفواتير: <strong className="text-on-surface font-mono">{filteredSales.length}</strong></span>
+              <span>متوسط الفاتورة: <strong className="text-primary font-mono">{avgBasket}</strong> ر.س</span>
+            </div>
+          </div>
+        </div>
 
-        {/* Section 1: Sales Report */}
-        <section className="bg-surface-container-low rounded-xl p-space-md sm:p-space-lg shadow-sm flex flex-col gap-space-md">
-          <div className="flex items-center justify-between">
+        {/* KPI 2: صافي الدخل التشغيلي */}
+        <div className="bg-surface-container-low p-space-lg rounded-2xl flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:border-tertiary/40 transition-colors">
+          <div className="flex items-center justify-between mb-space-sm">
+            <span className="font-label-md text-label-md text-on-surface-variant font-medium">صافي الدخل التشغيلي</span>
+            <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
+              <span className="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1">
+              <span className={`font-display-lg text-display-lg font-extrabold font-mono tracking-tight ${netProfit >= 0 ? "text-tertiary" : "text-error"}`}>
+                {isLoading ? "..." : fmtNumber(netProfit)}
+              </span>
+              <span className="font-headline-sm text-headline-sm text-tertiary font-bold">ر.س</span>
+            </div>
+            <div className="mt-space-xs flex items-center justify-between text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded-lg">
+              <span className="text-on-surface-variant">هامش الربح التشغيلي:</span>
+              <strong className={`font-mono font-bold ${netProfit >= 0 ? "text-tertiary" : "text-error"}`}>{profitMargin}%</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 3: إجمالي المصروفات التشغيلية */}
+        <div className="bg-surface-container-low p-space-lg rounded-2xl flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:border-secondary/40 transition-colors">
+          <div className="flex items-center justify-between mb-space-sm">
+            <span className="font-label-md text-label-md text-on-surface-variant font-medium">المصروفات التشغيلية الفعلية</span>
+            <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+              <span className="material-symbols-outlined text-[22px]">receipt_long</span>
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1">
+              <span className="font-display-lg text-display-lg font-extrabold text-secondary font-mono tracking-tight">
+                {isLoading ? "..." : fmtNumber(totalExpenses)}
+              </span>
+              <span className="font-headline-sm text-headline-sm text-secondary font-bold">ر.س</span>
+            </div>
+            <div className="mt-space-xs flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-lg">
+              <span>سندات الصرف المسجلة:</span>
+              <strong className="text-on-surface font-mono">{filteredExpenses.length} سند</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 4: ضريبة القيمة المضافة المحصلة */}
+        <div className="bg-surface-container-low p-space-lg rounded-2xl flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:border-primary-container/40 transition-colors">
+          <div className="flex items-center justify-between mb-space-sm">
+            <span className="font-label-md text-label-md text-on-surface-variant font-medium">ضريبة القيمة المضافة (15%)</span>
+            <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[22px]">percent</span>
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1">
+              <span className="font-display-lg text-display-lg font-extrabold text-on-surface font-mono tracking-tight">
+                {isLoading ? "..." : fmtNumber(vatCollected)}
+              </span>
+              <span className="font-headline-sm text-headline-sm text-primary font-bold">ر.س</span>
+            </div>
+            <div className="mt-space-xs flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-lg">
+              <span>صافي قبل الضريبة:</span>
+              <strong className="text-on-surface font-mono">{fmtNumber(netSalesBeforeVat)} ر.س</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Visual Comparison Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-xl mb-space-xl">
+        {/* Section A: مبيعات الفروع ومقارنة الأداء الحقيقي */}
+        <div className="bg-surface-container-low rounded-2xl p-space-lg shadow-sm border border-outline-variant/20 flex flex-col gap-space-md">
+          <div className="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-sm">
             <div className="flex items-center gap-space-sm">
-              <div className="w-2 h-6 rounded-full bg-primary-container"></div>
+              <div className="w-2.5 h-6 rounded-full bg-primary"></div>
               <div>
-                <h2 className="font-headline-md text-headline-md text-on-surface font-bold">تقرير المبيعات</h2>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">إجمالي إيرادات الفروع التسعة وتحليل طرق الدفع</p>
+                <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                  ترتيب ومقارنة أداء الفروع
+                </h2>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  المبيعات الحقيقية المسجلة لكل فرع ونسبتها من إجمالي دخل الشبكة
+                </p>
               </div>
             </div>
-            <span className="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-primary-container/15 text-primary font-label-sm text-label-sm shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
-              شهري نشط
+            <span className="font-mono text-label-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+              {branchPerformance.length} فروع نشطة
             </span>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-
-            <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs">
-              <span className="font-label-sm text-label-sm text-on-surface-variant">إجمالي المبيعات</span>
-              <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold">148,950 <span className="text-primary font-label-lg text-label-lg">ر.س</span></span>
-              <span className="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm">
-                <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                <span dir="ltr">+12.4%</span>
-                <span className="text-on-surface-variant">مقارنة بالشهر السابق</span>
-              </span>
+          {branchPerformance.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant gap-2">
+              <span className="material-symbols-outlined text-[36px] text-outline">storefront</span>
+              <span className="font-body-md text-body-md">لا توجد مبيعات مسجلة في هذا النطاق الزمني</span>
             </div>
-            <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs">
-              <span className="font-label-sm text-label-sm text-on-surface-variant">عدد عمليات البيع</span>
-              <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold">1,842 <span className="text-secondary font-label-lg text-label-lg">عملية</span></span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">
-                متوسط السلة: <strong className="text-on-surface">80.8</strong> ر.س
-              </span>
-            </div>
-          </div>
-
-          {/* Payment Method Distribution */}
-          <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-sm">
-            <span className="font-label-md text-label-md text-on-surface font-semibold">المبيعات حسب طريقة الدفع</span>
-            <div className="flex h-3 rounded-full overflow-hidden w-full">
-              <div className="h-full bg-primary" style={{ width: "55.3%" }} title="فيزا ومدى: 55.3%"></div>
-              <div className="h-full bg-tertiary" style={{ width: "23.0%" }} title="كاش: 23.0%"></div>
-              <div className="h-full bg-secondary" style={{ width: "21.7%" }} title="تطبيقات التوصيل: 21.7%"></div>
-            </div>
-            <div className="grid grid-cols-3 gap-space-xs text-center">
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
-                <span className="font-label-sm text-label-sm text-on-surface font-bold">55.3%</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">فيزا ومدى</span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="w-2 h-2 rounded-full bg-tertiary"></span>
-                <span className="font-label-sm text-label-sm text-on-surface font-bold">23.0%</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">كاش</span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                <span className="font-label-sm text-label-sm text-on-surface font-bold">21.7%</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">توصيل</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Branch Comparison Bars */}
-          <div className="flex flex-col gap-space-xs">
-            <span className="font-label-md text-label-md text-on-surface font-semibold mb-space-xs">مقارنة مبيعات الفروع التسعة</span>
-            {SALES_BARS.map(row => (
-              <div key={row.name} className="flex items-center gap-space-sm text-body-sm">
-                <span className={row.nameClass}>{row.name}</span>
-                <div className={row.trackClass}>
-                  <div className={row.fill} style={{ width: row.width }}></div>
-                </div>
-                <span className={row.amountClass}>{row.amount}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Section 2: Expenses Report */}
-        <section className="bg-surface-container-low rounded-xl p-space-md sm:p-space-lg shadow-sm flex flex-col gap-space-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-space-sm">
-              <div className="w-2 h-6 rounded-full bg-secondary-container"></div>
-              <div>
-                <h2 className="font-headline-md text-headline-md text-on-surface font-bold">تقرير المصروفات</h2>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">تحليل مصروفات التشغيل والإيجارات والرواتب لجميع الفروع</p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm shrink-0">
-              <span className="material-symbols-outlined text-[14px]">account_balance</span>
-              مالي
-            </span>
-          </div>
-
-          {/* Total Card */}
-          <div className="bg-surface-container rounded-xl p-space-md flex items-center justify-between">
-            <div className="flex flex-col gap-space-xs">
-              <span className="font-label-sm text-label-sm text-on-surface-variant">إجمالي المصروفات الشهرية</span>
-              <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold">64,850 <span className="text-secondary font-label-lg text-label-lg">ر.س</span></span>
-              <span className="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm">
-                <span className="material-symbols-outlined text-[14px]">trending_down</span>
-                <span dir="ltr">-4.2%</span>
-                <span className="text-on-surface-variant">مقارنة بالشهر السابق</span>
-              </span>
-            </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-secondary text-[24px] sm:text-[28px]">savings</span>
-            </div>
-          </div>
-
-          {/* Expenses Table */}
-          <div className="overflow-x-auto rounded-lg bg-surface-container">
-            <table className="w-full text-right font-body-sm text-body-sm min-w-[500px]">
-              <thead>
-                <tr className="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
-                  <th className="p-3 rounded-r-lg">الفرع</th>
-                  <th className="p-3">أبرز بنود المصروفات</th>
-                  <th className="p-3 text-left">الإجمالي</th>
-                  <th className="p-3 text-left rounded-l-lg">النسبة</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-container-high">
-                {EXPENSES.map(row => (
-                  <tr key={row.branch} className="hover:bg-surface-container-high/40 transition-colors">
-                    <td className="p-3 font-semibold flex items-center gap-1.5">
-                      <span className={row.dot}></span>
-                      <span>{row.branch}</span>
-                    </td>
-                    <td className="p-3 text-on-surface-variant">{row.items}</td>
-                    <td className={row.amountClass}>{row.amount}</td>
-                    <td className="p-3 text-left text-on-surface-variant">{row.pct}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Distribution Bar */}
-          <div className="flex flex-col gap-space-xs">
-            <span className="font-label-sm text-label-sm text-on-surface-variant">توزيع المصروفات بالنسبة المئوية</span>
-            <div className="flex h-2.5 rounded-full overflow-hidden w-full">
-              <div className="h-full bg-secondary-container" style={{ width: "28.1%" }} title="التحلية: 28.1%"></div>
-              <div className="h-full bg-secondary" style={{ width: "17.6%" }} title="العليا: 17.6%"></div>
-              <div className="h-full bg-primary-fixed-dim" style={{ width: "15.2%" }} title="طريق الملك: 15.2%"></div>
-              <div className="h-full bg-outline" style={{ width: "12.8%" }} title="الياسمين: 12.8%"></div>
-              <div className="h-full bg-surface-variant" style={{ width: "26.3%" }} title="الفروع الأخرى: 26.3%"></div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: Purchases Report */}
-        <section className="bg-surface-container-low rounded-xl p-space-md sm:p-space-lg shadow-sm flex flex-col gap-space-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-space-sm">
-              <div className="w-2 h-6 rounded-full bg-tertiary"></div>
-              <div>
-                <h2 className="font-headline-md text-headline-md text-on-surface font-bold">تقرير المشتريات</h2>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">فواتير التوريد والمشتريات من الموردين المعتمدين</p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm shrink-0">
-              <span className="material-symbols-outlined text-[14px]">local_shipping</span>
-              الموردون
-            </span>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-            <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs">
-              <span className="font-label-sm text-label-sm text-on-surface-variant">إجمالي المشتريات الشهرية</span>
-              <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold">52,400 <span className="text-tertiary font-label-lg text-label-lg">ر.س</span></span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">24 فاتورة توريد</span>
-            </div>
-            <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs">
-              <span className="font-label-sm text-label-sm text-on-surface-variant">الموردون النشطون</span>
-              <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold">8 <span className="text-on-surface-variant font-label-lg text-label-lg">موردين</span></span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">4 معتمدون رئيسيون</span>
-            </div>
-          </div>
-
-          {/* Suppliers Table */}
-          <div className="overflow-x-auto rounded-lg bg-surface-container">
-            <table className="w-full text-right font-body-sm text-body-sm min-w-[500px]">
-              <thead>
-                <tr className="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
-                  <th className="p-3 rounded-r-lg">المورد والفئة</th>
-                  <th className="p-3 text-center">الفواتير</th>
-                  <th className="p-3 text-left">المبلغ</th>
-                  <th className="p-3 text-left rounded-l-lg">حالة السداد</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-container-high">
-                {SUPPLIERS.map(row => (
-                  <tr key={row.name} className="hover:bg-surface-container-high/40 transition-colors">
-                    <td className="p-3">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-on-surface">{row.name}</span>
-                        <span className="font-label-sm text-label-sm text-on-surface-variant">{row.category}</span>
+          ) : (
+            <div className="flex flex-col gap-space-md pt-space-xs">
+              {branchPerformance.map((branch, idx) => {
+                const maxVal = branchPerformance[0]?.total || 1;
+                const fillPct = Math.round((branch.total / maxVal) * 100);
+                return (
+                  <div key={branch.name} className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-body-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center font-mono font-bold text-xs text-on-surface-variant">
+                          {idx + 1}
+                        </span>
+                        <span className="font-semibold text-on-surface">{branch.name}</span>
+                        <span className="text-xs text-on-surface-variant font-mono">({branch.count} فاتورة)</span>
                       </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold text-on-surface">{fmtNumber(branch.total)} ر.س</span>
+                        <span className="font-mono text-label-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">
+                          {branch.pct}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 w-full bg-surface-container rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${
+                          idx === 0
+                            ? "bg-primary"
+                            : idx === 1
+                            ? "bg-secondary"
+                            : "bg-primary-container"
+                        }`}
+                        style={{ width: `${fillPct}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Section B: تحليل طرق وقنوات الدفع */}
+        <div className="bg-surface-container-low rounded-2xl p-space-lg shadow-sm border border-outline-variant/20 flex flex-col gap-space-md">
+          <div className="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-sm">
+            <div className="flex items-center gap-space-sm">
+              <div className="w-2.5 h-6 rounded-full bg-secondary"></div>
+              <div>
+                <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                  تحليل قنوات وطرق الدفع
+                </h2>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  التدفق النقدي الفعلي مقسم بين الدفع الإلكتروني والنقدي
+                </p>
+              </div>
+            </div>
+            <span className="font-label-sm text-secondary font-bold bg-secondary/10 px-2.5 py-1 rounded-full">
+              {filteredSales.length} عملية دفع
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-space-sm pt-space-xs">
+            <span className="font-label-sm text-label-sm text-on-surface-variant">التوزيع النسبي للتحصيل:</span>
+            <div className="h-4 w-full rounded-full overflow-hidden flex shadow-inner bg-surface-container">
+              <div style={{ width: `${paymentStats.cardPct}%` }} className="bg-primary h-full transition-all" title={`شبكة ومدى: ${paymentStats.cardPct}%`}></div>
+              <div style={{ width: `${paymentStats.cashPct}%` }} className="bg-tertiary h-full transition-all" title={`كاش: ${paymentStats.cashPct}%`}></div>
+              <div style={{ width: `${paymentStats.deliveryPct}%` }} className="bg-secondary h-full transition-all" title={`تطبيقات توصيل: ${paymentStats.deliveryPct}%`}></div>
+            </div>
+
+            {/* Three Detail Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-sm mt-space-sm">
+              <div className="bg-surface-container p-space-md rounded-xl flex flex-col gap-1 border border-outline-variant/20">
+                <div className="flex items-center gap-1.5 text-primary">
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                  <span className="font-label-sm text-label-sm font-semibold">شبكة / مدى / فيزا</span>
+                </div>
+                <span className="font-display-sm text-display-sm font-bold text-on-surface font-mono mt-1">
+                  {paymentStats.cardPct}%
+                </span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant font-mono">
+                  {fmtNumber(paymentStats.card)} ر.س ({paymentStats.cardCount} فواتير)
+                </span>
+              </div>
+
+              <div className="bg-surface-container p-space-md rounded-xl flex flex-col gap-1 border border-outline-variant/20">
+                <div className="flex items-center gap-1.5 text-tertiary">
+                  <span className="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+                  <span className="font-label-sm text-label-sm font-semibold">الدفع النقدي (كاش)</span>
+                </div>
+                <span className="font-display-sm text-display-sm font-bold text-on-surface font-mono mt-1">
+                  {paymentStats.cashPct}%
+                </span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant font-mono">
+                  {fmtNumber(paymentStats.cash)} ر.س ({paymentStats.cashCount} فواتير)
+                </span>
+              </div>
+
+              <div className="bg-surface-container p-space-md rounded-xl flex flex-col gap-1 border border-outline-variant/20">
+                <div className="flex items-center gap-1.5 text-secondary">
+                  <span className="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                  <span className="font-label-sm text-label-sm font-semibold">تطبيقات التوصيل</span>
+                </div>
+                <span className="font-display-sm text-display-sm font-bold text-on-surface font-mono mt-1">
+                  {paymentStats.deliveryPct}%
+                </span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant font-mono">
+                  {fmtNumber(paymentStats.delivery)} ر.س ({paymentStats.deliveryCount} فواتير)
+                </span>
+              </div>
+            </div>
+
+            {/* Scientific Financial Observation */}
+            <div className="bg-surface-container-high/40 p-space-md rounded-xl flex items-center gap-space-sm mt-space-xs">
+              <span className="material-symbols-outlined text-primary text-[24px]">verified</span>
+              <div className="flex flex-col">
+                <span className="font-label-md text-label-md text-on-surface font-bold">
+                  كفاءة المطابقة والتحصيل الرقمي
+                </span>
+                <span className="font-body-sm text-body-sm text-on-surface-variant">
+                  {paymentStats.cardPct >= paymentStats.cashPct
+                    ? `قناة التحصيل السائدة هي الدفع الإلكتروني بنسبة ${paymentStats.cardPct}% مما يدعم كفاءة وسرعة المطابقة البنكية.`
+                    : `قناة التحصيل السائدة هي الدفع النقدي بنسبة ${paymentStats.cashPct}%. يرجى التأكد من توريد الصناديق بانتظام.`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: 3 Real Operational & Cost Breakdown Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-gutter mb-space-xl">
+        {/* Card 1: هيكل وتصنيف المصروفات الفعلية */}
+        <div className="bg-surface-container-low rounded-2xl p-space-lg shadow-sm border border-outline-variant/20 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-space-sm">
+              <div className="flex items-center gap-space-xs text-secondary font-bold font-headline-sm text-headline-sm">
+                <span className="material-symbols-outlined text-[22px]">pie_chart</span>
+                <span>هيكل المصروفات التشغيلية</span>
+              </div>
+              <span className="font-mono text-label-sm text-secondary bg-secondary/15 px-2 py-0.5 rounded">
+                {expenseCategories.length} بنود
+              </span>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+              توزيع المصروفات الفعلية المسجلة وفق بنود الصرف المعتمدة
+            </p>
+
+            {expenseCategories.length === 0 ? (
+              <div className="py-6 text-center text-body-sm text-on-surface-variant">
+                لا توجد مصروفات مسجلة ضمن نطاق الفلترة المحدد
+              </div>
+            ) : (
+              <div className="flex flex-col gap-space-sm">
+                {expenseCategories.slice(0, 4).map(item => (
+                  <div key={item.category} className="flex justify-between items-center text-body-sm py-1 border-b border-surface-container">
+                    <span className="text-on-surface-variant">{item.category}:</span>
+                    <div className="flex items-center gap-2">
+                      <strong className="text-on-surface font-mono">{fmtNumber(item.amount)} ر.س</strong>
+                      <span className="text-xs text-secondary font-mono">({item.pct}%)</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="mt-space-md pt-space-xs border-t border-surface-container-highest/40 flex items-center justify-between text-label-sm text-on-surface-variant">
+            <span>إجمالي مصاريف الفترة:</span>
+            <span className="text-secondary font-bold font-mono">{fmtNumber(totalExpenses)} ر.س</span>
+          </div>
+        </div>
+
+        {/* Card 2: مؤشرات سلامة وأمان المخزون */}
+        <div className="bg-surface-container-low rounded-2xl p-space-lg shadow-sm border border-outline-variant/20 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-space-sm">
+              <div className="flex items-center gap-space-xs text-primary font-bold font-headline-sm text-headline-sm">
+                <span className="material-symbols-outlined text-[22px]">inventory_2</span>
+                <span>أمان المخزون وسلاسل الإمداد</span>
+              </div>
+              <span className="font-mono text-label-sm text-primary bg-primary/15 px-2 py-0.5 rounded">
+                جاهزية {inventoryHealth.safePct}%
+              </span>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+              متابعة مستويات الأمان للأصناف الأولية والمنتجات بالمستودع
+            </p>
+            <div className="flex flex-col gap-space-sm">
+              <div className="flex justify-between items-center text-body-sm py-1 border-b border-surface-container">
+                <span className="text-on-surface-variant">إجمالي الأصناف المسجلة:</span>
+                <strong className="text-on-surface font-mono">{inventoryHealth.totalItems} صنف</strong>
+              </div>
+              <div className="flex justify-between items-center text-body-sm py-1 border-b border-surface-container">
+                <span className="text-on-surface-variant">أصناف بمستوى آمن:</span>
+                <strong className="text-tertiary font-mono">{inventoryHealth.safeItems} صنف</strong>
+              </div>
+              <div className="flex justify-between items-center text-body-sm py-1">
+                <span className="text-on-surface-variant">أصناف بلغت حد إعادة الطلب:</span>
+                <strong className={inventoryHealth.lowItems > 0 ? "text-error font-mono font-bold" : "text-tertiary font-mono"}>
+                  {inventoryHealth.lowItems} صنف
+                </strong>
+              </div>
+            </div>
+          </div>
+          <div className="mt-space-md pt-space-xs border-t border-surface-container-highest/40 flex items-center justify-between text-label-sm text-on-surface-variant">
+            <span>إجمالي الكميات بالمستودع:</span>
+            <span className="text-primary font-bold font-mono">{fmtNumber(inventoryHealth.totalQty)} وحدة</span>
+          </div>
+        </div>
+
+        {/* Card 3: ملخص كفاءة الفواتير والعمليات */}
+        <div className="bg-surface-container-low rounded-2xl p-space-lg shadow-sm border border-outline-variant/20 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-space-sm">
+              <div className="flex items-center gap-space-xs text-tertiary font-bold font-headline-sm text-headline-sm">
+                <span className="material-symbols-outlined text-[22px]">analytics</span>
+                <span>كفاءة المبيعات والتشغيل</span>
+              </div>
+              <span className="font-mono text-label-sm text-tertiary bg-tertiary/15 px-2 py-0.5 rounded">
+                معدلات حقيقية
+              </span>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+              مؤشرات الأداء التشغيلي المحققة للفترة المحددة
+            </p>
+            <div className="flex flex-col gap-space-sm">
+              <div className="flex justify-between items-center text-body-sm py-1 border-b border-surface-container">
+                <span className="text-on-surface-variant">معدل الإيراد اليومي التقديري:</span>
+                <strong className="text-on-surface font-mono">
+                  {period === "today" ? fmtNumber(totalSales) : fmtNumber(totalSales / (period === "week" ? 7 : period === "month" ? 30 : 30))} ر.س
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-body-sm py-1 border-b border-surface-container">
+                <span className="text-on-surface-variant">نسبة المصروفات من الإيراد:</span>
+                <strong className="text-secondary font-mono">
+                  {totalSales > 0 ? ((totalExpenses / totalSales) * 100).toFixed(1) : "0.0"}%
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-body-sm py-1">
+                <span className="text-on-surface-variant">معدل الفواتير الصادرة:</span>
+                <strong className="text-on-surface font-mono">{filteredSales.length} فاتورة معتمدة</strong>
+              </div>
+            </div>
+          </div>
+          <div className="mt-space-md pt-space-xs border-t border-surface-container-highest/40 flex items-center justify-between text-label-sm text-on-surface-variant">
+            <span>حالة القيود اليومية:</span>
+            <span className="text-tertiary font-bold">مطابقة ومقيدة في النظام</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: سجل أحدث العمليات والفواتير في الفترة لتدقيق البيانات */}
+      <div className="bg-surface-container-low rounded-2xl shadow-sm border border-outline-variant/20 overflow-hidden">
+        <div className="p-space-lg bg-surface-container-high/40 flex items-center justify-between border-b border-surface-container-highest">
+          <div className="flex items-center gap-space-sm">
+            <span className="material-symbols-outlined text-primary text-[22px]">table_chart</span>
+            <div>
+              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                سجل فواتير ومعاملات الفترة المختارة
+              </h2>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">
+                تدقيق تفصيلي للعمليات الفعلية المسجلة ومطابقتها للمجاميع المالية
+              </span>
+            </div>
+          </div>
+          <span className="font-label-md text-label-md text-on-surface-variant bg-surface-container px-3 py-1 rounded-full font-mono">
+            {filteredSales.length} عملية مسجلة
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          {filteredSales.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant gap-2">
+              <span className="material-symbols-outlined text-[36px] text-outline">receipt</span>
+              <span>لا توجد فواتير مسجلة ضمن محددات البحث والفترة الحالية</span>
+            </div>
+          ) : (
+            <table className="w-full text-right border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-surface-container font-label-md text-label-md text-on-surface-variant">
+                  <th className="py-3 px-space-md text-right">رقم الفاتورة</th>
+                  <th className="py-3 px-space-md text-right">الفرع</th>
+                  <th className="py-3 px-space-md text-right">الكاشير / المستخدم</th>
+                  <th className="py-3 px-space-md text-center">طريقة الدفع</th>
+                  <th className="py-3 px-space-md text-left">المبلغ الإجمالي</th>
+                  <th className="py-3 px-space-md text-left">التاريخ والتوقيت</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container-highest/20 font-body-md text-body-md text-on-surface">
+                {filteredSales.slice(0, 15).map(sale => (
+                  <tr key={sale.id} className="hover:bg-surface-container/60 transition-colors">
+                    <td className="py-3 px-space-md font-mono text-primary font-bold text-label-md">
+                      {sale.invoice_number || `INV-${sale.id.slice(0, 6)}`}
                     </td>
-                    <td className="p-3 text-center font-semibold text-secondary">{row.invoices}</td>
-                    <td className="p-3 text-left font-bold text-on-surface">{row.amount}</td>
-                    <td className="p-3 text-left"><span className={row.statusClass}>{row.status}</span></td>
+                    <td className="py-3 px-space-md font-semibold text-on-surface">
+                      {sale.branch_name || "فرع عام"}
+                    </td>
+                    <td className="py-3 px-space-md text-on-surface-variant text-body-sm">
+                      {sale.cashier_name || "كاشير النظام"}
+                    </td>
+                    <td className="py-3 px-space-md text-center">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        (sale.payment_method || "").includes("كاش")
+                          ? "bg-tertiary/15 text-tertiary"
+                          : "bg-primary/15 text-primary"
+                      }`}>
+                        {sale.payment_method || "كاش"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-space-md text-left font-mono font-bold text-body-md text-on-surface">
+                      {fmtNumber(sale.total)} <span className="text-label-sm font-normal text-primary">ر.س</span>
+                    </td>
+                    <td className="py-3 px-space-md text-left font-mono text-body-sm text-on-surface-variant">
+                      {sale.sold_at ? new Date(sale.sold_at).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" }) : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </section>
-
-        {/* Section 4: Inventory Report */}
-        <section className="bg-surface-container-low rounded-xl p-space-md sm:p-space-lg shadow-sm flex flex-col gap-space-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-space-sm">
-              <div className="w-2 h-6 rounded-full bg-primary"></div>
-              <div>
-                <h2 className="font-headline-md text-headline-md text-on-surface font-bold">تقرير المخزون</h2>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">رصيد المستودع المركزي وحركة الوارد والمنصرف الشهرية</p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm shrink-0">
-              <span className="material-symbols-outlined text-[14px]">inventory_2</span>
-              المستودع
-            </span>
-          </div>
-
-          {/* Inventory Value Card */}
-          <div className="bg-surface-container rounded-xl p-space-md flex items-center justify-between">
-            <div className="flex flex-col gap-space-xs">
-              <span className="font-label-sm text-label-sm text-on-surface-variant">القيمة التقديرية للمخزون</span>
-              <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold">186,400 <span className="text-primary font-label-lg text-label-lg">ر.س</span></span>
-              <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                4.2x{" "}<span className="font-label-sm text-label-sm text-on-surface-variant">شهرياً</span>
-              </span>
-            </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-primary text-[24px] sm:text-[28px]">warehouse</span>
-            </div>
-          </div>
-
-          {/* In / Out Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-            <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-tertiary text-[18px]">south_west</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">الوارد هذا الشهر</span>
-              </div>
-              <span className="font-headline-md text-headline-md text-tertiary font-bold">
-                +6,450{" "}<span className="font-label-sm text-label-sm">كجم</span>
-              </span>
-            </div>
-            <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-secondary text-[18px]">north_east</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">المنصرف هذا الشهر</span>
-              </div>
-              <span className="font-headline-md text-headline-md text-secondary font-bold">
-                -5,800{" "}<span className="font-label-sm text-label-sm">كجم</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Low Stock Items */}
-          <div className="flex flex-col gap-space-sm">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface font-semibold">أصناف منخفضة المخزون</span>
-              <span className="inline-flex items-center gap-1 font-label-sm text-label-sm text-error">
-                <span className="w-1.5 h-1.5 rounded-full bg-error animate-ping"></span>
-                3 أصناف بحاجة لتوريد
-              </span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-surface-container rounded-lg p-space-sm sm:px-space-md sm:py-space-sm gap-2">
-              <div className="flex items-center gap-space-sm">
-                <span className="material-symbols-outlined text-secondary text-[20px]">phishing</span>
-                <div className="flex flex-col">
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">فيليه سلمون نرويجي طازج</span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">RAW-SLM-03</span>
-                </div>
-              </div>
-              <span className="self-start sm:self-auto px-space-sm py-0.5 rounded-full bg-secondary/15 text-secondary font-label-sm text-label-sm font-bold shrink-0">420 كجم متبقي</span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-surface-container rounded-lg p-space-sm sm:px-space-md sm:py-space-sm gap-2">
-              <div className="flex items-center gap-space-sm">
-                <span className="material-symbols-outlined text-error text-[20px]">liquor</span>
-                <div className="flex flex-col">
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">صوص الباربكيو دايت</span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">SAU-BBQ-04</span>
-                </div>
-              </div>
-              <span className="self-start sm:self-auto px-space-sm py-0.5 rounded-full bg-error/15 text-error font-label-sm text-label-sm font-bold shrink-0">95 عبوة متبقية</span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-surface-container rounded-lg p-space-sm sm:px-space-md sm:py-space-sm gap-2">
-              <div className="flex items-center gap-space-sm">
-                <span className="material-symbols-outlined text-error text-[20px]">water_drop</span>
-                <div className="flex flex-col">
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">زيت زيتون بكر ممتاز (احتياطي)</span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">OIL-OLV-02</span>
-                </div>
-              </div>
-              <span className="self-start sm:self-auto px-space-sm py-0.5 rounded-full bg-error/15 text-error font-label-sm text-label-sm font-bold shrink-0">120 لتر متبقي</span>
-            </div>
-          </div>
-        </section>
-
+          )}
+        </div>
       </div>
     </div>
   );

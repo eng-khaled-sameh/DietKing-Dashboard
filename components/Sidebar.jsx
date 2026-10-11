@@ -1,11 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { NAV_ITEMS } from "../lib/config";
+import { supabase } from "../lib/api";
 
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("dietking_user");
+    }
+    router.push("/login");
+  }
 
   return (
     <aside
@@ -52,6 +64,16 @@ export default function Sidebar({ isOpen, onClose }) {
             </Link>
           );
         })}
+
+        {/* خيار تسجيل خروج مباشرة بعد التقارير والإدارة */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-error hover:bg-error-container/20 transition-colors font-body-md text-body-md cursor-pointer mt-1 text-right w-full"
+        >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          <span>تسجيل خروج</span>
+        </button>
       </nav>
     </aside>
   );
